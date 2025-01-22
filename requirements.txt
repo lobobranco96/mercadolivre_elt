@@ -2,3 +2,11 @@
 beautifulsoup4
 pandas
 requests
+
+astronomer-cosmos==1.6.0
+astro-sdk-python[google]
+dbt-bigquery
+apache-airflow-providers-google
+dbt-core
+
+astro-run-dag # This package is needed for the astro run command. It will be removed before a deploy
