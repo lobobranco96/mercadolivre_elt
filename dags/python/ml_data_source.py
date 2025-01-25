@@ -12,7 +12,7 @@ class MercadoLivreWebScraper:
         }
 
     def generate_url_product(self):
-        response = requests.get(self.url, headers=self.headers)
+        response = requests.get(url, headers=self.headers)
         soup = BeautifulSoup(response.text, "html.parser")
         lista_url = []
         main = soup.find_all(class_="ui-search-layout__item")
@@ -54,15 +54,17 @@ class MercadoLivreWebScraper:
             if main:
               preco_tag = main.find("span", class_="andes-money-amount ui-pdp-price__part andes-money-amount--cents-superscript andes-money-amount--compact")
               if preco_tag:
-                preco = preco_tag.get_text().strip() if preco_tag else "0" #.replace("R$", "")
+                preco = preco_tag.get_text().strip() if preco_tag else "0"
 
             preco_antigo = "Não encontrado"  # Valor default caso não encontre a tag
+            # Verifica se 'main' não é None antes de tentar buscar a tag
             if main:
               preco_antigo_tag = main.find("span", class_="andes-money-amount__fraction")
               if preco_tag:
                 preco_antigo = preco_antigo_tag.get_text() if preco_antigo_tag else "0"
 
             centavos = "Não encontrado"  # Valor default caso não encontre a tag
+            # Verifica se 'main' não é None antes de tentar buscar a tag
             if main:
               centavos_tag = main.find("span", class_="andes-money-amount__cents andes-money-amount__cents--superscript-16")
               if centavos_tag:
@@ -71,6 +73,7 @@ class MercadoLivreWebScraper:
             full_preco_antigo = preco_antigo + "," + centavos
 
             desconto = "Não encontrado"  # Valor default caso não encontre a tag
+            # Verifica se 'main' não é None antes de tentar buscar a tag
             if main:
               desconto_tag = main.find("span", class_="andes-money-amount__discount ui-pdp-family--REGULAR")
               if desconto_tag:
@@ -83,7 +86,7 @@ class MercadoLivreWebScraper:
               extra_tag = main.find("div", class_="ui-pdp-header__subtitle")
               if extra_tag:
                 extra = extra_tag.get_text().split(" | ") if extra_tag else ["Não encontrado", "Não encontrado"]
-                extra = extra[:2] 
+                extra = extra[:2]  # Garante que a lista terá no máximo 2 elementos
                 novo_ou_usado = extra[0].strip() if len(extra) > 0 else "Não encontrado"
                 vendidos = extra[1].strip() if len(extra) > 1 else "0"
 
@@ -110,10 +113,9 @@ class MercadoLivreWebScraper:
             while url:
                 print(f"Coletando dados da página: {url}")
                 try:
-                    product_urls, soup = generate_url_product(url)
+                    product_urls, soup = generate_url_product(url)  # Corrigido
                     # Usar o ThreadPoolExecutor para coletar dados de produtos em paralelo
-                    futures = [executor.submit(fetch_data, product_url) for product_url in product_urls]
-
+                    futures = [executor.submit(self.fetch_data, product_url) for product_url in product_urls]
                     for future in as_completed(futures):
                         result = future.result()
                         if result:
@@ -123,6 +125,8 @@ class MercadoLivreWebScraper:
                     next_button = soup.find("li", class_="andes-pagination__button andes-pagination__button--next")
                     if next_button and next_button.find('a'):
                         url = next_button.find('a')['href']
+                        break
+                        #time.sleep(10)
                     else:
                         break  # Se não houver "próxima página", sai do loop
                 except Exception as e:
@@ -143,8 +147,14 @@ def coletar_dados_produtos(produto):
     file_path = f"../../include/{nome_produto}.csv"
     dataframe.to_csv(file_path, index=False)
 
-    return dataframe
+def coletar_dados_ml(produtos):
+  #produtos = ["https://lista.mercadolivre.com.br/tenis-feminino",
+   #           "https://lista.mercadolivre.com.br/tenis-masculino",
+     #         "https://lista.mercadolivre.com.br/suplemento"]
+  # Para cada produto, chama a função de coleta
+  for produto in produtos:
+    coletar_dados_produtos(produto)
 
 if __name__ == "__main__":
     # Cabeçalho para evitar bloqueios
-    coletar_dados_produtos()
+    coletar_dados_ml(produtos)

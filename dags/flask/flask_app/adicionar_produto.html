@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Adicionar Produto</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-image: url('https://via.placeholder.com/1920x1080'); /* Substitua por sua imagem de fundo */
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            color: white;
+        }
+
+        .container {
+            background-color: rgba(255, 255, 255, 0.8);
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 600px;
+            padding: 30px;
+            text-align: center;
+        }
+
+        /* Logo */
+        .logo {
+            margin-bottom: 20px; /* Espaço entre o logo e o título */
+        }
+
+        .logo img {
+            max-width: 150px; /* Define a largura máxima da imagem */
+            height: auto; /* Mantém a proporção da imagem */
+        }
+
+        h1 {
+            color: #333;
+            font-size: 2rem;
+            margin-bottom: 20px;
+        }
+
+        form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        label {
+            font-size: 1rem;
+            font-weight: bold;
+            text-align: left;
+            color: #555;
+        }
+
+        input[type="text"] {
+            padding: 10px;
+            font-size: 1rem;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            width: 100%;
+            transition: border 0.3s;
+        }
+
+        input[type="text"]:focus {
+            border: 2px solid #007BFF;
+            outline: none;
+        }
+
+        button {
+            background-color: #007BFF;
+            color: white;
+            font-size: 1.1rem;
+            padding: 12px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        h2 {
+            color: #444;
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+        }
+
+        ul {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        li {
+            background-color: #f9f9f9;
+            padding: 10px;
+            margin-bottom: 8px;
+            border-radius: 6px;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Logo do Mercado Livre com caminho relativo -->
+        <div class="logo">
+            <img src="images/mercado-livre-logo-5D049EA049-seeklogo.com.png" alt="Mercado Livre Logo">
+        </div>
+
+        <!-- Título -->
+        <h1>Adicionar Produto</h1>
+
+        <!-- Formulário -->
+        <form id="product-form">
+            <label for="produto">Produto:</label>
+            <input type="text" id="produto" name="produto" required placeholder="Insira o produto desejado aqui">
+            <button type="submit">Adicionar Produto</button>
+        </form>
+
+        <h2>Produtos Cadastrados</h2>
+        <ul id="produtos-list"></ul>
+    </div>
+
+    <script>
+        // Função para enviar o produto via POST
+        document.getElementById('product-form').addEventListener('submit', function(event) {
+            event.preventDefault();
+            const produtoUrl = document.getElementById('produto').value;
+
+            fetch('/api/produtos', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ produto: produtoUrl })
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert(data.message);  // Exibe uma mensagem de sucesso
+                document.getElementById('produto').value = '';  // Limpa o campo de entrada
+                loadProdutos();  // Atualiza a lista de produtos cadastrados
+            });
+        });
+
+        // Função para carregar todos os produtos cadastrados
+        function loadProdutos() {
+            fetch('/api/produtos')
+                .then(response => response.json())
+                .then(produtos => {
+                    const ul = document.getElementById('produtos-list');
+                    ul.innerHTML = '';
+                    produtos.forEach(produto => {
+                        const li = document.createElement('li');
+                        li.textContent = produto.produto;
+                        ul.appendChild(li);
+                    });
+                });
+        }
+
+        // Carregar os produtos ao carregar a página
+        loadProdutos();
+    </script>
+</body>
+</html>

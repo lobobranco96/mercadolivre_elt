@@ -1,0 +1,10 @@
+bigquery_project:
+  target: dev
+  outputs:
+    dev:
+      type: bigquery
+      method: service-account
+      project: #gcp-project-id
+      dataset: #your_dataset_name
+      keyfile: #/path/to/your-service-account-key.json
+      threads: 4

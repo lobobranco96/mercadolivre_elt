@@ -1,0 +1,14 @@
+version: '3'
+services:
+  flask:
+    build:
+      context: .
+      dockerfile: dags/flask/Dockerfile
+    ports:
+      - "5000:5000"  # Porta do Flask
+    networks:
+      - astro_default
+
+networks:
+  astro_default:
+    driver: bridge
