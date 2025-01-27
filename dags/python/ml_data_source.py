@@ -2,6 +2,7 @@ import requests
 from bs4 import BeautifulSoup
 import pandas as pd
 from concurrent.futures import ThreadPoolExecutor, as_completed
+import logging
 
 
 class MercadoLivreWebScraper:
@@ -102,7 +103,7 @@ class MercadoLivreWebScraper:
                 "product_url": url
             }
         except requests.exceptions.RequestException as e:
-            print(f"Erro de requisição ao acessar {url}: {e}")
+            logging.error(f"Erro de requisição ao acessar {url}: {e}")
             return None
 
     def get_all_pages_data(self):
@@ -130,7 +131,7 @@ class MercadoLivreWebScraper:
                     else:
                         break  # Se não houver "próxima página", sai do loop
                 except Exception as e:
-                    print(f"Erro ao coletar os dados da página: {url}, erro: {e}")
+                    logging.error(f"Erro ao coletar dados da página {url}: {e}")
                     continue  # Caso algum erro ocorra, sai do loop
 
         return dataframe
