@@ -30,14 +30,9 @@
             text-align: center;
         }
 
-        /* Logo */
-        .logo {
-            margin-bottom: 20px; /* Espaço entre o logo e o título */
-        }
-
         .logo img {
-            max-width: 150px; /* Define a largura máxima da imagem */
-            height: auto; /* Mantém a proporção da imagem */
+            max-width: 150px;
+            height: auto;
         }
 
         h1 {
@@ -53,25 +48,12 @@
             margin-bottom: 30px;
         }
 
-        label {
-            font-size: 1rem;
-            font-weight: bold;
-            text-align: left;
-            color: #555;
-        }
-
         input[type="text"] {
             padding: 10px;
             font-size: 1rem;
             border: 2px solid #ddd;
             border-radius: 6px;
             width: 100%;
-            transition: border 0.3s;
-        }
-
-        input[type="text"]:focus {
-            border: 2px solid #007BFF;
-            outline: none;
         }
 
         button {
@@ -82,7 +64,6 @@
             border: none;
             border-radius: 6px;
             cursor: pointer;
-            transition: background-color 0.3s;
         }
 
         button:hover {
@@ -92,7 +73,6 @@
         h2 {
             color: #444;
             font-size: 1.5rem;
-            margin-bottom: 10px;
         }
 
         ul {
@@ -107,52 +87,88 @@
             border-radius: 6px;
             color: #333;
         }
+
+        .tab-container {
+            margin-top: 20px;
+        }
+
+        .tab-container button {
+            background-color: #007BFF;
+            color: white;
+            font-size: 1rem;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .tab-container button:hover {
+            background-color: #0056b3;
+        }
+
+        .tab-content {
+            margin-top: 20px;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <!-- Logo do Mercado Livre com caminho relativo -->
         <div class="logo">
             <img src="images/mercado-livre-logo-5D049EA049-seeklogo.com.png" alt="Mercado Livre Logo">
         </div>
 
-        <!-- Título -->
         <h1>Adicionar Produto</h1>
 
-        <!-- Formulário -->
         <form id="product-form">
-            <label for="produto">Produto:</label>
             <input type="text" id="produto" name="produto" required placeholder="Insira o produto desejado aqui">
             <button type="submit">Adicionar Produto</button>
         </form>
 
-        <h2>Produtos Cadastrados</h2>
-        <ul id="produtos-list"></ul>
+        <div class="tab-container">
+            <button id="load-produtos">Mostrar Produtos Adicionados</button>
+        </div>
+
+        <div class="tab-content">
+            <h2>Produtos Adicionados</h2>
+            <ul id="produtos-list"></ul>
+        </div>
     </div>
 
     <script>
-        // Função para enviar o produto via POST
+        // Função para adicionar um produto via POST
         document.getElementById('product-form').addEventListener('submit', function(event) {
             event.preventDefault();
             const produtoUrl = document.getElementById('produto').value;
 
-            fetch('/api/produtos', {
+            fetch('http://localhost:5000/api/produtos', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ produto: produtoUrl })
             })
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Erro ao adicionar o produto');
+                }
+                return response.json();
+            })
             .then(data => {
-                alert(data.message);  // Exibe uma mensagem de sucesso
-                document.getElementById('produto').value = '';  // Limpa o campo de entrada
-                loadProdutos();  // Atualiza a lista de produtos cadastrados
+                alert(data.message || 'Produto adicionado com sucesso!');
+                document.getElementById('produto').value = ''; // Limpa o campo de texto
+            })
+            .catch(error => {
+                console.error('Erro ao adicionar o produto:', error);
             });
         });
 
-        // Função para carregar todos os produtos cadastrados
+        // Função para carregar os produtos via GET
         function loadProdutos() {
-            fetch('/api/produtos')
-                .then(response => response.json())
+            fetch('http://localhost:5000/api/produtos')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Erro ao carregar os produtos');
+                    }
+                    return response.json();
+                })
                 .then(produtos => {
                     const ul = document.getElementById('produtos-list');
                     ul.innerHTML = '';
@@ -161,11 +177,14 @@
                         li.textContent = produto.produto;
                         ul.appendChild(li);
                     });
+                })
+                .catch(error => {
+                    console.error('Erro ao carregar os produtos:', error);
                 });
         }
 
-        // Carregar os produtos ao carregar a página
-        loadProdutos();
+        // Botão para carregar os produtos
+        document.getElementById('load-produtos').addEventListener('click', loadProdutos);
     </script>
 </body>
 </html>

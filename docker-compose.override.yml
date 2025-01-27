@@ -1,9 +1,10 @@
 version: '3'
 services:
   flask:
-    build:
-      context: .
-      dockerfile: dags/flask/Dockerfile
+    build: docker/flask
+    container_name: flask
+    # context: .
+    #  dockerfile: docker/flask
     ports:
       - "5000:5000"  # Porta do Flask
     networks:
