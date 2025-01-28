@@ -1,9 +1,11 @@
+import os
+import logging
+from concurrent.futures import ThreadPoolExecutor, as_completed
+
+from google.cloud import storage
 import requests
 from bs4 import BeautifulSoup
 import pandas as pd
-from concurrent.futures import ThreadPoolExecutor, as_completed
-import logging
-
 
 class MercadoLivreWebScraper:
     def __init__(self, url, headers=None):
@@ -135,8 +137,20 @@ class MercadoLivreWebScraper:
                     continue  # Caso algum erro ocorra, sai do loop
 
         return dataframe
-    
-def coletar_dados_produtos(produto):
+
+def upload_to_gcs(local_tmp_path, bucket_name, gcs_path):
+
+    key_path = "/opt/airflow/dags/credential/google_credential.json"
+    client = storage.Client.from_service_account_json(key_path)
+    bucket = client.get_bucket(bucket_name)
+    blob = bucket.blob(gcs_path)
+
+    print(f'Arquivo enviado para {gcs_file_path}')
+    return blob.upload_from_filename(local_file_path)
+
+
+
+def coletar_dados_produtos(produto, bucket_name, gcs_path, data_insercao):
     # Instanciar a classe MercadoLivreWebScraper com o produto URL
     ml = MercadoLivreWebScraper(url=produto)
 
@@ -144,18 +158,31 @@ def coletar_dados_produtos(produto):
     dataframe = ml.get_all_pages_data()
 
     nome_produto = produto.split('/')[3]
-    # Salvar os dados em um arquivo CSV
-    file_path = f"../../include/{nome_produto}.csv"
-    dataframe.to_csv(file_path, index=False)
 
-def coletar_dados_ml(produtos):
+    # Salvar os dados em um arquivo CSV
+    local_tmp_path = f"/tmp/{nome_produto}.csv"
+
+    # Salvar os dados em um arquivo CSV temporário
+    dataframe.to_csv(local_tmp_path, index=False)
+
+    # Definir o caminho do arquivo no GCS (exemplo: "produtos/tenis_feminino.csv")
+    gcs_path = f"{gcs_path}/{data_insercao}/{nome_produto}.csv"
+
+    upload_to_gcs(local_tmp_path, bucket_name, gcs_path)
+
+    # Excluir o arquivo local após o upload
+    if os.path.exists(local_tmp_path):
+        os.remove(local_tmp_path)
+        print(f"Arquivo local {local_tmp_path} excluído após o upload.")
+
+def coletar_dados_ml(produtos, bucket_name, gcs_path, data_insercao):
   #produtos = ["https://lista.mercadolivre.com.br/tenis-feminino",
    #           "https://lista.mercadolivre.com.br/tenis-masculino",
      #         "https://lista.mercadolivre.com.br/suplemento"]
   # Para cada produto, chama a função de coleta
   for produto in produtos:
-    coletar_dados_produtos(produto)
+    coletar_dados_produtos(produto, bucket_name, gcs_path, data_insercao)
 
 if __name__ == "__main__":
     # Cabeçalho para evitar bloqueios
-    coletar_dados_ml(produtos)
+    coletar_dados_ml(produtos, bucket_name, gcs_path, data_insercao)

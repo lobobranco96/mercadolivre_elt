@@ -20,22 +20,27 @@ def produtos():
 # Rota para adicionar novos produtos via POST (Usuário envia dados)
 @server.route('/api/produtos', methods=['POST'])
 def add_produto():
-    data = request.get_json()  # Coleta os dados enviados no POST
+    data = request.get_json()
 
-    # Validação simples para garantir que o campo "produto" esteja presente
+    # Validação simples
     if "produto" not in data:
         return jsonify({"message": "O campo 'produto' é obrigatório!"}), 400
 
-    # Adicionando a data de inserção atual
+    # Criando o objeto do produto
     produto = {
-        "produto": data["produto"],  # URL do produto
-        "data_insercao": datetime.datetime.now().strftime("%Y-%m-%d")  # Data de inserção no formato YYYY-MM-DD
+        "produto": data["produto"],
+        "data_insercao": datetime.datetime.now().strftime("%Y-%m-%d")
     }
 
-    # Inserindo o produto no banco TinyDB
+    # Inserindo no TinyDB
     db.insert(produto)
 
-    return jsonify({"message": "Produto adicionado com sucesso!"}), 200
+    # Retornando o produto adicionado junto com a mensagem de sucesso
+    return jsonify({
+        "message": "Produto adicionado com sucesso!",
+        "produto": produto["produto"],
+        "data_insercao": produto["data_insercao"]
+    }), 200
 
 # Rota para recuperar todos os produtos (funcionário consulta os dados via GET)
 @server.route('/api/produtos/all', methods=['GET'])

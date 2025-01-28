@@ -7,7 +7,7 @@
     <style>
         body {
             font-family: 'Arial', sans-serif;
-            background-image: url('https://via.placeholder.com/1920x1080'); /* Substitua por sua imagem de fundo */
+            background-image: url('https://via.placeholder.com/1920x1080');
             background-size: cover;
             background-position: center;
             background-attachment: fixed;
@@ -124,6 +124,9 @@
             <button type="submit">Adicionar Produto</button>
         </form>
 
+        <!-- Mover a div de mensagem de erro aqui -->
+        <div id="mensagem-produto" style="margin-top: 15px; font-weight: bold;"></div>
+
         <div class="tab-container">
             <button id="load-produtos">Mostrar Produtos Adicionados</button>
         </div>
@@ -137,54 +140,78 @@
     <script>
         // Função para adicionar um produto via POST
         document.getElementById('product-form').addEventListener('submit', function(event) {
-            event.preventDefault();
-            const produtoUrl = document.getElementById('produto').value;
+    event.preventDefault();
+    const produtoUrl = document.getElementById('produto').value;
+    const mensagemProduto = document.getElementById('mensagem-produto');
 
-            fetch('http://localhost:5000/api/produtos', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ produto: produtoUrl })
-            })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Erro ao adicionar o produto');
-                }
-                return response.json();
-            })
-            .then(data => {
-                alert(data.message || 'Produto adicionado com sucesso!');
-                document.getElementById('produto').value = ''; // Limpa o campo de texto
-            })
-            .catch(error => {
-                console.error('Erro ao adicionar o produto:', error);
-            });
-        });
+    fetch('http://localhost:5000/api/produtos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ produto: produtoUrl })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.produto && data.data_insercao) {
+            // Exibe a mensagem com o produto adicionado e a data
+            mensagemProduto.innerHTML = `<strong>Produto Adicionado:</strong> ${data.produto} <br>
+                                         <strong>Data de Inserção:</strong> ${data.data_insercao}`;
+            mensagemProduto.style.color = 'green';
 
-        // Função para carregar os produtos via GET
-        function loadProdutos() {
-            fetch('http://localhost:5000/api/produtos')
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error('Erro ao carregar os produtos');
-                    }
-                    return response.json();
-                })
-                .then(produtos => {
-                    const ul = document.getElementById('produtos-list');
-                    ul.innerHTML = '';
-                    produtos.forEach(produto => {
-                        const li = document.createElement('li');
-                        li.textContent = produto.produto;
-                        ul.appendChild(li);
-                    });
-                })
-                .catch(error => {
-                    console.error('Erro ao carregar os produtos:', error);
-                });
+            // Adiciona o produto à lista abaixo do botão automaticamente
+            const ul = document.getElementById('produtos-list');
+            const li = document.createElement('li');
+            li.innerHTML = `<strong>Produto:</strong> ${data.produto} <br>
+                            <strong>Data de Inserção:</strong> ${data.data_insercao}`;
+            ul.appendChild(li);
+        } else {
+            mensagemProduto.innerHTML = 'Produto adicionado, mas resposta incompleta.';
+            mensagemProduto.style.color = 'orange';
         }
 
-        // Botão para carregar os produtos
-        document.getElementById('load-produtos').addEventListener('click', loadProdutos);
+        document.getElementById('produto').value = ''; // Limpa o campo
+    })
+    .catch(error => {
+        console.error('Erro ao adicionar o produto:', error);
+        mensagemProduto.innerHTML = 'Erro ao adicionar o produto!';
+        mensagemProduto.style.color = 'red';
+    });
+});
+
+        // Função para carregar os produtos via GET
+function loadProdutos() {
+    fetch('http://localhost:5000/api/produtos')
+        .then(response => {
+            console.log("Resposta recebida:", response);
+            if (!response.ok) {
+                throw new Error('Erro ao carregar os produtos');
+            }
+            return response.json();
+        })
+        .then(produtos => {
+            console.log("Produtos recebidos:", produtos);
+
+            const ul = document.getElementById('produtos-list');
+            ul.innerHTML = ''; // Limpa a lista antes de adicionar novos itens
+
+            if (produtos.length === 0) {
+                ul.innerHTML = '<li>Nenhum produto adicionado ainda.</li>';
+                return;
+            }
+
+            produtos.forEach(produto => {
+                const li = document.createElement('li');
+                li.innerHTML = `<strong>Produto:</strong> ${produto.produto} <br>
+                                <strong>Data de Inserção:</strong> ${produto.data_insercao}`;
+                ul.appendChild(li);
+            });
+        })
+        .catch(error => {
+            console.error('Erro ao carregar os produtos:', error);
+            document.getElementById('produtos-list').innerHTML = '<li>Nenhum produto adicionado.</li>';
+        });
+}
+// Botão para carregar os produtos
+document.getElementById('load-produtos').addEventListener('click', loadProdutos);
     </script>
 </body>
 </html>
