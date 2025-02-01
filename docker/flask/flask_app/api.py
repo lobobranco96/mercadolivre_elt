@@ -1,8 +1,7 @@
+import datetime
 from flask import Flask, jsonify, request
 from tinydb import TinyDB, Query
 from flask_cors import CORS
-import datetime
-
 
 # Inicializa o servidor Flask e o banco de dados TinyDB
 server = Flask(__name__)
