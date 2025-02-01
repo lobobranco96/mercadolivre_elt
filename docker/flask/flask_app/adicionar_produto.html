@@ -151,6 +151,7 @@
     })
     .then(response => response.json())
     .then(data => {
+        console.log("Dados recebidos:", data); // Log para ver a resposta
         if (data.produto && data.data_insercao) {
             // Exibe a mensagem com o produto adicionado e a data
             mensagemProduto.innerHTML = `<strong>Produto Adicionado:</strong> ${data.produto} <br>
@@ -178,7 +179,7 @@
 });
 
         // Função para carregar os produtos via GET
-function loadProdutos() {
+        function loadProdutos() {
     fetch('http://localhost:5000/api/produtos')
         .then(response => {
             console.log("Resposta recebida:", response);

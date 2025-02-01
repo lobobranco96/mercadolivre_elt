@@ -1,9 +1,12 @@
 from flask import Flask, jsonify, request
 from tinydb import TinyDB, Query
+from flask_cors import CORS
 import datetime
+
 
 # Inicializa o servidor Flask e o banco de dados TinyDB
 server = Flask(__name__)
+CORS(server)
 db = TinyDB('database.json')
 
 # Rota principal da API
@@ -11,11 +14,8 @@ db = TinyDB('database.json')
 def produtos():
     # Coleta todos os produtos no banco de dados
     produtos = db.all()
-
-    if produtos:
-        return jsonify(produtos)  # Retorna todos os produtos armazenados no banco
-    else:
-        return jsonify({"message": "Nenhum produto encontrado."}), 404
+    # Retorna a lista de produtos, mesmo que esteja vazia
+    return jsonify(produtos)
 
 # Rota para adicionar novos produtos via POST (Usuário envia dados)
 @server.route('/api/produtos', methods=['POST'])
@@ -35,12 +35,8 @@ def add_produto():
     # Inserindo no TinyDB
     db.insert(produto)
 
-    # Retornando o produto adicionado junto com a mensagem de sucesso
-    return jsonify({
-        "message": "Produto adicionado com sucesso!",
-        "produto": produto["produto"],
-        "data_insercao": produto["data_insercao"]
-    }), 200
+    # Retornando o produto adicionado (sem "message" para evitar erro no frontend)
+    return jsonify(produto), 201  # 201 = Created
 
 # Rota para recuperar todos os produtos (funcionário consulta os dados via GET)
 @server.route('/api/produtos/all', methods=['GET'])
