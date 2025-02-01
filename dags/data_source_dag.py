@@ -1,9 +1,20 @@
+from pendulum import datetime
+import logging
+from python.mercado_livre import coletar_dados_produtos
+import requests
+
 from airflow.decorators import dag, task
 from airflow.operators.empty import EmptyOperator
 from airflow.providers.http.sensors.http import HttpSensor
-from pendulum import datetime
-import requests
-from python.ml_data_source import coletar_dados_ml
+
+
+# Configuração do logger
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[logging.StreamHandler()]
+)
+logger = logging.getLogger(__name__)
 
 @dag(
     start_date=datetime(2024, 1, 1),
@@ -26,44 +37,45 @@ def data_source():
         for produto in produtos_coletados:
             produto_nome = produto['produto'].replace(" ", "-")
 
-            url = f"https://lista.mercadolivre.com.br/{produto_nome}"
+            url_produto = f"https://lista.mercadolivre.com.br/{produto_nome}"
             data_insercao = produto['data_insercao']
-            coletar_dados_ml(url, BUCKET_NAME, GCS_PATH, data_insercao)
+            coletar_dados_produtos(url_produto, BUCKET_NAME, GCS_PATH, data_insercao)
 
-    # Função para verificar se há produtos novos
+    # coletar os produtos novos
     @task
-    def check_for_new_products():
+    def novos_produtos():
         url = 'http://172.19.0.2:5000/api/produtos'  # URL da API Flask
 
         try:
-            print("coletando")
+            logger.info("Coletando produtos...")
             response = requests.get(url)
             if response.status_code == 200:
                 produtos_coletados = response.json()
 
                 # Verifica se existem produtos na API
                 if produtos_coletados:
+                    logger.info(f"{len(produtos_coletados)} novos produtos encontrados.")
                     extract_mercado_livre_product(produtos_coletados)
                 else:
-                    print("Nenhum produto novo encontrado.")
+                    logger.info("Nenhum produto novo encontrado.")
             else:
-                print(f"Erro ao coletar dados: {response.status_code}")
+                logger.error(f"Erro ao coletar dados: {response.status_code}")
         except requests.exceptions.RequestException as e:
-            print(f"Erro ao coletar dados: {e}")
+            logger.error(f"Erro ao coletar dados: {e}")
 
     # Configuração do HttpSensor para verificar se há novos produtos
     sensor = HttpSensor(
         task_id="sensor_produtos_novos",
         http_conn_id="http_default",
-        endpoint="api/produtos",  # Sem barra no início
-        poke_interval=10,
+        endpoint="api/produtos",  
+        poke_interval=600,
         timeout=600,
         mode="poke",
         retries=5,
     )
 
     # Definição do fluxo de execução das tasks
-    init >> sensor >> check_for_new_products() >> finish
+    init >> sensor >> novos_produtos() >> finish
 
 # Instantiate the DAG
 data_source()

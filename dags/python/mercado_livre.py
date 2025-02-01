@@ -7,6 +7,13 @@ import requests
 from bs4 import BeautifulSoup
 import pandas as pd
 
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[logging.StreamHandler()]
+)
+logger = logging.getLogger(__name__)
+
 class MercadoLivreWebScraper:
     def __init__(self, url, headers=None):
         self.url = url
@@ -128,8 +135,6 @@ class MercadoLivreWebScraper:
                     next_button = soup.find("li", class_="andes-pagination__button andes-pagination__button--next")
                     if next_button and next_button.find('a'):
                         url = next_button.find('a')['href']
-                        break
-                        #time.sleep(10)
                     else:
                         break  # Se não houver "próxima página", sai do loop
                 except Exception as e:
@@ -145,19 +150,19 @@ def upload_to_gcs(local_tmp_path, bucket_name, gcs_path):
     bucket = client.get_bucket(bucket_name)
     blob = bucket.blob(gcs_path)
 
-    print(f'Arquivo enviado para {gcs_file_path}')
+    logger.info(f'Arquivo enviado para {gcs_file_path}')
     return blob.upload_from_filename(local_file_path)
 
 
 
-def coletar_dados_produtos(produto, bucket_name, gcs_path, data_insercao):
+def coletar_dados_produtos(url_produto, bucket_name, gcs_path, data_insercao):
     # Instanciar a classe MercadoLivreWebScraper com o produto URL
-    ml = MercadoLivreWebScraper(url=produto)
+    ml = MercadoLivreWebScraper(url=url_produto)
 
     # Coletar dados de todas as páginas
     dataframe = ml.get_all_pages_data()
 
-    nome_produto = produto.split('/')[3]
+    nome_produto = url_produto.split('/')[3]
 
     # Salvar os dados em um arquivo CSV
     local_tmp_path = f"/tmp/{nome_produto}.csv"
@@ -173,16 +178,8 @@ def coletar_dados_produtos(produto, bucket_name, gcs_path, data_insercao):
     # Excluir o arquivo local após o upload
     if os.path.exists(local_tmp_path):
         os.remove(local_tmp_path)
-        print(f"Arquivo local {local_tmp_path} excluído após o upload.")
-
-def coletar_dados_ml(produtos, bucket_name, gcs_path, data_insercao):
-  #produtos = ["https://lista.mercadolivre.com.br/tenis-feminino",
-   #           "https://lista.mercadolivre.com.br/tenis-masculino",
-     #         "https://lista.mercadolivre.com.br/suplemento"]
-  # Para cada produto, chama a função de coleta
-  for produto in produtos:
-    coletar_dados_produtos(produto, bucket_name, gcs_path, data_insercao)
+        logger.info(f"Arquivo local {local_tmp_path} excluído após o upload.")
 
 if __name__ == "__main__":
     # Cabeçalho para evitar bloqueios
-    coletar_dados_ml(produtos, bucket_name, gcs_path, data_insercao)
+    coletar_dados_produtos(url_produto, bucket_name, gcs_path, data_insercao)
