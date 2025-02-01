@@ -14,7 +14,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-class MercadoLivreWebScraper:
+class MercadoLivre:
     def __init__(self, url, headers=None):
         self.url = url
         self.headers = headers or {
@@ -157,7 +157,7 @@ def upload_to_gcs(local_tmp_path, bucket_name, gcs_path):
 
 def coletar_dados_produtos(url_produto, bucket_name, gcs_path, data_insercao):
     # Instanciar a classe MercadoLivreWebScraper com o produto URL
-    ml = MercadoLivreWebScraper(url=url_produto)
+    ml = MercadoLivre(url=url_produto)
 
     # Coletar dados de todas as páginas
     dataframe = ml.get_all_pages_data()
