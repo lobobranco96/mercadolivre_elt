@@ -1,8 +1,7 @@
+import datetime
 from flask import Flask, jsonify, request
 from tinydb import TinyDB, Query
 from flask_cors import CORS
-import datetime
-
 
 # Inicializa o servidor Flask e o banco de dados TinyDB
 server = Flask(__name__)
@@ -38,17 +37,8 @@ def add_produto():
     # Retornando o produto adicionado (sem "message" para evitar erro no frontend)
     return jsonify(produto), 201  # 201 = Created
 
-# Rota para recuperar todos os produtos (funcionário consulta os dados via GET)
-@server.route('/api/produtos/all', methods=['GET'])
-def get_all_data():
-    data = db.all()  # Recupera todos os dados armazenados
-    if data:
-        return jsonify(data)
-    else:
-        return jsonify({"message": "Nenhum produto encontrado"}), 404
-
 # Rota para buscar produtos com base na data de inserção (exemplo: "2025-01-24")
-@server.route('/api/produtos/all/date/<date>', methods=['GET'])
+@server.route('/api/produtos/date/<date>', methods=['GET'])
 def get_data_by_date(date):
     produto = Query()
 
