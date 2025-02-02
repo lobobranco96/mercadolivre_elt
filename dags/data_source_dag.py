@@ -30,21 +30,13 @@ def data_source():
     finish = EmptyOperator(task_id="fim_pipeline")
 
     # Função para coletar os dados de web scraping dos produtos
-    def extract_mercado_livre_product(produtos_coletados):
-
-        BUCKET_NAME = "lobobranco-datalake"
-        GCS_PATH = "raw"
-        for produto in produtos_coletados:
-            produto_nome = produto['produto'].replace(" ", "-")
-
-            url_produto = f"https://lista.mercadolivre.com.br/{produto_nome}"
-            data_insercao = produto['data_insercao']
-            coletar_dados_produtos(url_produto, BUCKET_NAME, GCS_PATH, data_insercao)
 
     # coletar os produtos novos
-    @task
+    @task(task_id="coletar_novos_produtos")
     def novos_produtos():
         url = 'http://172.19.0.2:5000/api/produtos'  # URL da API Flask
+        BUCKET_NAME = "lobobranco-datalake"
+        GCS_PATH = "raw"
 
         try:
             logger.info("Coletando produtos...")
@@ -55,7 +47,12 @@ def data_source():
                 # Verifica se existem produtos na API
                 if produtos_coletados:
                     logger.info(f"{len(produtos_coletados)} novos produtos encontrados.")
-                    extract_mercado_livre_product(produtos_coletados)
+                    for produto in produtos_coletados:
+                        produto_nome = produto['produto'].replace(" ", "-")
+
+                        url_produto = f"https://lista.mercadolivre.com.br/{produto_nome}"
+                        data_insercao = produto['data_insercao']
+                        coletar_dados_produtos(url_produto, BUCKET_NAME, GCS_PATH, data_insercao)
                 else:
                     logger.info("Nenhum produto novo encontrado.")
             else:
@@ -78,4 +75,4 @@ def data_source():
     init >> sensor >> novos_produtos() >> finish
 
 # Instantiate the DAG
-data_source()
+mercado_livre = data_source()
