@@ -28,13 +28,12 @@ def data_source():
 
     init = EmptyOperator(task_id="inicio")
     finish = EmptyOperator(task_id="fim_pipeline")
-
-    # Função para coletar os dados de web scraping dos produtos
+    hoje = datetime.now().strftime('%Y-%m-%d')
 
     # coletar os produtos novos
     @task(task_id="coletar_novos_produtos")
     def novos_produtos():
-        url = 'http://172.19.0.2:5000/api/produtos'  # URL da API Flask
+        url = f'http://172.19.0.2:5000/api/produtos/date/{hoje}'  # URL da API Flask
         BUCKET_NAME = "mercado-livre-datalake"
         GCS_PATH = "raw"
 
@@ -64,7 +63,7 @@ def data_source():
     sensor = HttpSensor(
         task_id="sensor_produtos_novos",
         http_conn_id="http_default",
-        endpoint="api/produtos",  
+        endpoint=f"api/produtos/date/{hoje}",  
         poke_interval=600,
         timeout=600,
         mode="poke",
