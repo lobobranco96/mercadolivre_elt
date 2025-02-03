@@ -35,7 +35,7 @@ def data_source():
     @task(task_id="coletar_novos_produtos")
     def novos_produtos():
         url = 'http://172.19.0.2:5000/api/produtos'  # URL da API Flask
-        BUCKET_NAME = "lobobranco-datalake"
+        BUCKET_NAME = "mercado-livre-datalake"
         GCS_PATH = "raw"
 
         try:

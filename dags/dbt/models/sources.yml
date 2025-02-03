@@ -1,0 +1,9 @@
+version: 2
+
+sources:
+  - name: mercadolivre
+    database: projeto-lobobranco
+    schema: mercadolivre
+    tables:
+      - name: produtos
+        description: "Tabela com informações dos produtos do Mercado Livre"
