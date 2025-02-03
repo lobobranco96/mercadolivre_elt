@@ -10,11 +10,13 @@ from astro.files import File
 from astro.sql.table import Table
 
 from cosmos import DbtTaskGroup, ProfileConfig, ProjectConfig
+from google.cloud import storage
 
 DBT_PATH = "/usr/local/airflow/dags/dbt"
 DBT_PROFILE = "dbt_project"
 DBT_TARGETS = "dev"
 
+GCP_CONN = "gcp_default"
 
 profile_config = ProfileConfig(
     profile_name=DBT_PROFILE,
@@ -52,31 +54,39 @@ def elt_datapipeline():
     init = EmptyOperator(task_id="inicio")
     finish = EmptyOperator(task_id="fim_pipeline")
 
-    load_options = SnowflakeLoadOptions(
-    copy_options={
-        "MATCH_BY_COLUMN_NAME": "CASE_INSENSITIVE"
-    })
-    ######################### ASTRO PYTHON SDK
-    s3_path = f"s3://{BUCKET_NAME}/{PROCESSED_DATA}/{FILE_NAME}.parquet"
-    s3_to_snowflake_task = aql.load_file(
-            task_id="load_enem_data",
-            input_file=File(path=f"{s3_path}", conn_id=AWS_CONN),
-            output_table=Table(name="MERGED_ENEMDATA", conn_id=SNOWFLAKE_CONN),
-            if_exists="replace",
-            use_native_support=True,
-            load_options=load_options,
-            columns_names_capitalization="original"
-        )
-    
+    @task
+    def data_ingestion():
+      
+      key_path = "/opt/airflow/dags/credential/google_credential.json"
+      client = storage.Client.from_service_account_json(key_path)
+
+      bucket_name = "mercado-livre-datalake"
+      bucket = client.get_bucket(bucket_name)
+      blobs = bucket.list_blobs()
+
+      gs_paths = []
+      # Itera sobre os arquivos no bucket e constrói o gs_path
+      for blob in blobs:
+          gs_path = f"gs://{bucket_name}/{blob.name}"
+          gs_paths.append(gs_path)
+
+      for caminho_arquivo in gs_paths[2:]:
+        gcs_to_bigquery_task = aql.load_file(
+                task_id="product_data",
+                input_file=File(path=f"{caminho_arquivo}", conn_id=GCP_CONN),
+                output_table=Table(name="MERGED_ENEMDATA", conn_id=GCP_CONN),
+                use_native_support=True,
+                columns_names_capitalization="original"
+            )
+  
     dbt_running_models = DbtTaskGroup(
         group_id="dbt_running_models",
         project_config=project_config,
         profile_config=profile_config,
         default_args={"retries": 2},
     )
+    data_ing = data_ingestion()
 
-    duckdb = duckdb_data_ingestion()
-
-    init >> duckdb >> s3_to_snowflake_task >> dbt_running_models >> finish
+    init >> data_ing >> dbt_running_models >> finish
 
 elt_datapipeline()
