@@ -1,9 +1,9 @@
 from pathlib import Path
 import os
+from pendulum import datetime
 
 from airflow.decorators import dag, task, task_group
 from airflow.operators.empty import EmptyOperator
-from pendulum import datetime
 
 from astro import sql as aql
 from astro.files import File
@@ -71,13 +71,13 @@ def elt_datapipeline():
           gs_paths.append(gs_path)
 
       for caminho_arquivo in gs_paths[2:]:
-        gcs_to_bigquery_task = aql.load_file(
-                task_id="product_data",
-                input_file=File(path=f"{caminho_arquivo}", conn_id=GCP_CONN),
-                output_table=Table(name="MERGED_ENEMDATA", conn_id=GCP_CONN),
-                use_native_support=True,
-                columns_names_capitalization="original"
-            )
+          gcs_to_bigquery_task = aql.load_file(
+                  task_id="product_data",
+                  input_file=File(path=f"{caminho_arquivo}", conn_id=GCP_CONN),
+                  output_table=Table(name="produtos", conn_id=GCP_CONN),
+                  use_native_support=True,
+                  columns_names_capitalization="original"
+              )
   
     dbt_running_models = DbtTaskGroup(
         group_id="dbt_running_models",
