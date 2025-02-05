@@ -36,8 +36,9 @@ def data_source():
     @task(task_id="coletar_novos_produtos")
     def novos_produtos():
         url = f'http://172.19.0.2:5000/api/produtos/'#date/'#{hoje}'  # URL da API Flask
-        BUCKET_NAME = "mercado-livre-datalake"
-        GCS_PATH = "raw"
+        
+        bucket_name = "mercado-livre-datalake"
+        gcs_path = "stading"
 
         try:
             logger.info("Coletando produtos...")
@@ -49,11 +50,14 @@ def data_source():
                 if produtos_coletados:
                     logger.info(f"{len(produtos_coletados)} novos produtos encontrados.")
                     for produto in produtos_coletados:
-                        produto_nome = produto['produto'].replace(" ", "-")
+                        nome_produto = produto['produto'].replace(" ", "-")
 
-                        url_produto = f"https://lista.mercadolivre.com.br/{produto_nome}"
-                        data_insercao = produto['data_insercao']
-                        coletar_dados_produtos(url_produto, BUCKET_NAME, GCS_PATH, data_insercao)
+                        url_produto = f"https://lista.mercadolivre.com.br/{nome_produto}"
+                        data_insercao = produto['data_insercao']  # Ex. 2025-01-25
+
+                        gcs_full_path = f"{gcs_path}/{data_insercao}/{nome_produto}.csv"
+
+                        coletar_dados_produtos(url_produto, bucket_name, gcs_full_path)
                 else:
                     logger.info("Nenhum produto novo encontrado.")
             else:

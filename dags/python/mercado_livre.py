@@ -143,19 +143,19 @@ class MercadoLivre:
 
         return dataframe
 
-def upload_to_gcs(local_tmp_path, bucket_name, gcs_path):
+def upload_to_gcs(local_tmp_path, bucket_name, gcs_full_path):
 
     key_path = "/usr/local/airflow/dags/credentials/google_credential.json"
     client = storage.Client.from_service_account_json(key_path)
     bucket = client.get_bucket(bucket_name)
-    blob = bucket.blob(gcs_path)
+    blob = bucket.blob(gcs_full_path)
 
     logger.info(f'Arquivo enviado para {gcs_file_path}')
-    return blob.upload_from_filename(local_file_path)
+    return blob.upload_from_filename(local_tmp_path)
 
 
 
-def coletar_dados_produtos(url_produto, bucket_name, gcs_path, data_insercao):
+def coletar_dados_produtos(url_produto, bucket_name, gcs_full_path):
     # Instanciar a classe MercadoLivreWebScraper com o produto URL
     ml = MercadoLivre(url=url_produto)
 
@@ -171,9 +171,8 @@ def coletar_dados_produtos(url_produto, bucket_name, gcs_path, data_insercao):
     dataframe.to_csv(local_tmp_path, index=False)
 
     # Definir o caminho do arquivo no GCS (exemplo: "produtos/tenis_feminino.csv")
-    gcs_path = f"{gcs_path}/{data_insercao}/{nome_produto}.csv"
 
-    upload_to_gcs(local_tmp_path, bucket_name, gcs_path)
+    upload_to_gcs(local_tmp_path, bucket_name, gcs_full_path)
 
     # Excluir o arquivo local após o upload
     if os.path.exists(local_tmp_path):
@@ -182,4 +181,4 @@ def coletar_dados_produtos(url_produto, bucket_name, gcs_path, data_insercao):
 
 if __name__ == "__main__":
     # Cabeçalho para evitar bloqueios
-    coletar_dados_produtos(url_produto, bucket_name, gcs_path, data_insercao)
+    coletar_dados_produtos(url_produto, bucket_name, gcs_full_path)
