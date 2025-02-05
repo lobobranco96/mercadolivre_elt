@@ -1,4 +1,3 @@
-#from pendulum import datetime
 from datetime import datetime
 import logging
 from python.mercado_livre import coletar_dados_produtos
@@ -7,7 +6,6 @@ import requests
 from airflow.decorators import dag, task
 from airflow.operators.empty import EmptyOperator
 from airflow.providers.http.sensors.http import HttpSensor
-
 
 # Configuração do logger
 logging.basicConfig(
@@ -29,51 +27,56 @@ def data_source():
 
     init = EmptyOperator(task_id="inicio")
     finish = EmptyOperator(task_id="fim_pipeline")
+    today = datetime.now().strftime('%Y-%m-%d')
 
-    hoje = datetime.now().strftime('%Y-%m-%d')
+    # Função para buscar dados da API
+    def buscar_produtos_api(today):
+        url = f'http://localhost:5000/api/produtos/date/{today}'
+        response = requests.get(url)
+        if response.status_code == 200 and len(response.json()) > 0:
+            return response.json()  # Retorna a lista de produtos
+        else:
+            logger.info("Nenhum produto encontrado ou erro na requisição.")
+            return []
 
-    # coletar os produtos novos
-    @task(task_id="coletar_novos_produtos")
-    def novos_produtos():
-        url = f'http://172.19.0.2:5000/api/produtos/'#date/'#{hoje}'  # URL da API Flask
-        BUCKET_NAME = "mercado-livre-datalake"
-        GCS_PATH = "raw"
-
+    # Função que processa cada produto
+    @task(task_id="coletando_produtos")
+    def coleta_produto(produto):
+        bucket_name = "mercado-livre-datalake"
+        gcs_path = "stading"
         try:
-            logger.info("Coletando produtos...")
-            response = requests.get(url)
-            if response.status_code == 200:
-                produtos_coletados = response.json()
+            logger.info('Iniciando a coleta de produtos...')
+            nome_produto = produto['produto'].replace(" ", "-")
+            url_produto = f"https://lista.mercadolivre.com.br/{nome_produto}"
+            data_insercao = produto['data_insercao']  # Ex. 2025-01-25
+            gcs_full_path = f"{gcs_path}/{data_insercao}/{nome_produto}.csv"
 
-                # Verifica se existem produtos na API
-                if produtos_coletados:
-                    logger.info(f"{len(produtos_coletados)} novos produtos encontrados.")
-                    for produto in produtos_coletados:
-                        produto_nome = produto['produto'].replace(" ", "-")
-
-                        url_produto = f"https://lista.mercadolivre.com.br/{produto_nome}"
-                        data_insercao = produto['data_insercao']
-                        coletar_dados_produtos(url_produto, BUCKET_NAME, GCS_PATH, data_insercao)
-                else:
-                    logger.info("Nenhum produto novo encontrado.")
-            else:
-                logger.error(f"Erro ao coletar dados: {response.status_code}")
+            # Coleta os dados e armazena no GCS
+            coletar_dados_produtos(url_produto, bucket_name, gcs_full_path)
         except requests.exceptions.RequestException as e:
             logger.error(f"Erro ao coletar dados: {e}")
 
+    # Função para iniciar a coleta de dados dos produtos
+    @task(task_id="iniciar_mercado_livre")
+    def iniciar_mercado_livre():
+        produtos = buscar_produtos_api(today)
+        if produtos:  # Verifica se há produtos antes de coletar
+            for produto in produtos:
+                coleta_produto(produto)
+        else:
+            logger.info("Nenhum produto encontrado para coleta.")
+
+    endpoint_api = f"api/produtos/date/{today}"
     # Configuração do HttpSensor para verificar se há novos produtos
     sensor = HttpSensor(
         task_id="sensor_produtos_novos",
-        http_conn_id="http_default",
-        endpoint=f"api/produtos",#date/{hoje},  
+        http_conn_id="http_default", 
+        endpoint=endpoint_api,
         poke_interval=10,
         timeout=600,
         mode="poke",
         retries=5,
     )
 
-    # Definição do fluxo de execução das tasks
-    init >> sensor >> novos_produtos() >> finish
-
-# Instantiate the DAG
-mercado_livre = data_source()
+    # Definindo o fluxo de execução
+    init >> sensor >> iniciar_mercado_livre() >> finish
