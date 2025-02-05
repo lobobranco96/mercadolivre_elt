@@ -70,7 +70,7 @@ def data_source():
     # Configuração do HttpSensor para verificar se há novos produtos
     sensor = HttpSensor(
         task_id="sensor_produtos_novos",
-        http_conn_id="http_default",  # Certifique-se de que o "http_default" está configurado no Airflow Connections
+        http_conn_id="http_default", 
         endpoint=endpoint_api,
         poke_interval=10,
         timeout=600,
