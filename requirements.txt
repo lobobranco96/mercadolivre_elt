@@ -3,6 +3,5 @@ beautifulsoup4
 pandas
 requests
 
+dbt-bigquery==1.7.5
 astronomer-cosmos
-apache-airflow-providers-google
-python-dotenv

@@ -145,7 +145,7 @@ class MercadoLivre:
 
 def upload_to_gcs(local_tmp_path, bucket_name, gcs_path):
 
-    key_path = "/opt/airflow/dags/credential/google_credential.json"
+    key_path = "/usr/local/airflow/dags/credentials/google_credential.json"
     client = storage.Client.from_service_account_json(key_path)
     bucket = client.get_bucket(bucket_name)
     blob = bucket.blob(gcs_path)

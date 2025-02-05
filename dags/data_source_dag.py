@@ -1,4 +1,5 @@
-from pendulum import datetime
+#from pendulum import datetime
+from datetime import datetime
 import logging
 from python.mercado_livre import coletar_dados_produtos
 import requests
@@ -28,12 +29,13 @@ def data_source():
 
     init = EmptyOperator(task_id="inicio")
     finish = EmptyOperator(task_id="fim_pipeline")
+
     hoje = datetime.now().strftime('%Y-%m-%d')
 
     # coletar os produtos novos
     @task(task_id="coletar_novos_produtos")
     def novos_produtos():
-        url = f'http://172.19.0.2:5000/api/produtos/date/{hoje}'  # URL da API Flask
+        url = f'http://172.19.0.2:5000/api/produtos/'#date/'#{hoje}'  # URL da API Flask
         BUCKET_NAME = "mercado-livre-datalake"
         GCS_PATH = "raw"
 
@@ -63,8 +65,8 @@ def data_source():
     sensor = HttpSensor(
         task_id="sensor_produtos_novos",
         http_conn_id="http_default",
-        endpoint=f"api/produtos/date/{hoje}",  
-        poke_interval=600,
+        endpoint=f"api/produtos",#date/{hoje},  
+        poke_interval=10,
         timeout=600,
         mode="poke",
         retries=5,

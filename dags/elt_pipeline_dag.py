@@ -12,9 +12,10 @@ from astro.sql.table import Table
 from cosmos import DbtTaskGroup, ProfileConfig, ProjectConfig
 from google.cloud import storage
 
-DBT_PATH = "/usr/local/airflow/dags/dbt"
+DBT_PATH = "/usr/local/airflow/dags/dbt/"
 DBT_PROFILE = "dbt_project"
 DBT_TARGETS = "dev"
+os.environ["DBT_PROFILES_DIR"] = "/usr/local/airflow/dags/dbt"
 
 GCP_CONN = "gcp_default"
 
@@ -57,7 +58,7 @@ def elt_datapipeline():
     @task
     def data_ingestion():
       
-      key_path = "/opt/airflow/dags/credential/google_credential.json"
+      key_path = "/usr/local/airflow/dags/credentials/google_credential.json"
       client = storage.Client.from_service_account_json(key_path)
 
       bucket_name = "mercado-livre-datalake"

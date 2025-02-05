@@ -12,4 +12,4 @@ SELECT
     status AS status,
     vendidos AS vendidos,
     product_url AS url_produto
-FROM {{ source('bigquery', 'produtos') }}
+FROM {{ source('mercadolivre', 'produtos') }}
