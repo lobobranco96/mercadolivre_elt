@@ -1,4 +1,5 @@
-from datetime import datetime
+import pendulum
+from pendulum import datetime
 import logging
 from python.mercado_livre import coletar_dados_produtos
 import requests
@@ -14,6 +15,7 @@ logging.basicConfig(
     handlers=[logging.StreamHandler()]
 )
 logger = logging.getLogger(__name__)
+HOJE = pendulum.now().format('YYYY-MM-DD')
 
 @dag(
     start_date=datetime(2024, 1, 1),
@@ -27,11 +29,10 @@ def data_source():
 
     init = EmptyOperator(task_id="inicio")
     finish = EmptyOperator(task_id="fim_pipeline")
-    today = datetime.now().strftime('%Y-%m-%d')
 
     # Função para buscar dados da API
-    def buscar_produtos_api(today):
-        url = f'http://localhost:5000/api/produtos'#date/{today}'
+    def buscar_produtos_api():
+        url = f'http://localhost:5000/api/produtos/date/{HOJE}'
         response = requests.get(url)
         if response.status_code == 200 and len(response.json()) > 0:
             return response.json()  # Retorna a lista de produtos
@@ -59,14 +60,14 @@ def data_source():
     # Função para iniciar a coleta de dados dos produtos
     @task(task_id="iniciar_mercado_livre")
     def iniciar_mercado_livre():
-        produtos = buscar_produtos_api(today)
+        produtos = buscar_produtos_api()
         if produtos:  # Verifica se há produtos antes de coletar
             for produto in produtos:
                 coleta_produto(produto)
         else:
             logger.info("Nenhum produto encontrado para coleta.")
 
-    endpoint_api = f"api/produtos/date/{today}"
+    endpoint_api = f"api/produtos/date/{HOJE}"
     # Configuração do HttpSensor para verificar se há novos produtos
     sensor = HttpSensor(
         task_id="sensor_produtos_novos",

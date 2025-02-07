@@ -1,0 +1,6 @@
+soda_cloud:
+  connection:
+    type: bigquery
+    project: projeto-lobobranco
+    dataset: produtos
+    credentials: /usr/local/airflow/dags/credentials/google_credential.json

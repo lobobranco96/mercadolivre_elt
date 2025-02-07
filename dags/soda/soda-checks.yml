@@ -1,0 +1,80 @@
+checks:
+  - name: check_nome_produto_not_null
+    description: Verifica se a coluna 'nome_produto' não tem valores nulos
+    sql: |
+      SELECT COUNT(*) AS num_nulls
+      FROM `projeto-lobobranco.mercadolivre.produtos`
+      WHERE nome_produto IS NULL
+    severity: error
+    threshold: 0  # Não pode ter valores nulos, caso contrário, gera erro
+
+  - name: check_marca_nullable
+    description: Verifica se a coluna 'marca' pode ter valores nulos (sem falha)
+    sql: |
+      SELECT COUNT(*) AS num_nulls
+      FROM `projeto-lobobranco.mercadolivre.produtos`
+      WHERE marca IS NULL
+    severity: warning
+    threshold: 0  # Permitido nulo, mas um alerta pode ser gerado caso haja muitos nulos.
+
+  - name: check_preco_novo_not_null
+    description: Verifica se a coluna 'preco_novo' não tem valores nulos
+    sql: |
+      SELECT COUNT(*) AS num_nulls
+      FROM `projeto-lobobranco.mercadolivre.produtos`
+      WHERE preco_novo IS NULL
+    severity: error
+    threshold: 0  # Não pode ter valores nulos, caso contrário, gera erro
+
+  - name: check_parcela_nullable
+    description: Verifica se a coluna 'parcela' pode ter valores nulos
+    sql: |
+      SELECT COUNT(*) AS num_nulls
+      FROM `projeto-lobobranco.mercadolivre.produtos`
+      WHERE parcela IS NULL
+    severity: warning
+    threshold: 0  # Permitido nulo, mas um alerta pode ser gerado caso haja muitos nulos.
+
+  - name: check_preco_antigo_nullable
+    description: Verifica se a coluna 'preco_antigo' pode ter valores nulos
+    sql: |
+      SELECT COUNT(*) AS num_nulls
+      FROM `projeto-lobobranco.mercadolivre.produtos`
+      WHERE preco_antigo IS NULL
+    severity: warning
+    threshold: 0  # Permitido nulo, mas um alerta pode ser gerado caso haja muitos nulos.
+
+  - name: check_desconto_porcentagem_not_null
+    description: Verifica se a coluna 'desconto_porcentagem' não tem valores nulos
+    sql: |
+      SELECT COUNT(*) AS num_nulls
+      FROM `projeto-lobobranco.mercadolivre.produtos`
+      WHERE desconto_porcentagem IS NULL OR desconto_porcentagem = ''
+    severity: error
+    threshold: 0  # Não pode ter valores nulos ou vazios, caso contrário, gera erro
+
+  - name: check_status_not_null
+    description: Verifica se a coluna 'status' não tem valores nulos
+    sql: |
+      SELECT COUNT(*) AS num_nulls
+      FROM `projeto-lobobranco.mercadolivre.produtos`
+      WHERE status IS NULL
+    severity: error
+    threshold: 0  # Não pode ter valores nulos, caso contrário, gera erro
+
+  - name: check_vendidos_nullable
+    description: Verifica se a coluna 'vendidos' pode ter valores nulos
+    sql: |
+      SELECT COUNT(*) AS num_nulls
+      FROM `projeto-lobobranco.mercadolivre.produtos`
+      WHERE vendidos IS NULL
+    severity: warning
+    threshold: 0  # Permitido nulo, mas um alerta pode ser gerado caso haja muitos nulos.
+
+  - name: check_product_url_nullable
+    description: Verifica se a coluna 'product_url' pode ter valores nulos
+    sql: |
+      SELECT COUNT(*) AS num_invalid_urls
+      FROM `projeto-lobobranco.mercadolivre.produtos`
+      WHERE product_url NOT LIKE 'http%'
+    severity: warning

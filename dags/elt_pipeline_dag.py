@@ -1,9 +1,11 @@
 from pathlib import Path
 import os
-from pendulum import datetime
+import pendulum
+from pendulum import datetime, timedelta
 
 from airflow.decorators import dag, task, task_group
 from airflow.operators.empty import EmptyOperator
+from airflow.operators.bash import BashOperator
 
 from astro import sql as aql
 from astro.files import File
@@ -58,27 +60,31 @@ def elt_datapipeline():
     @task
     def data_ingestion():
       
-      key_path = "/usr/local/airflow/dags/credentials/google_credential.json"
-      client = storage.Client.from_service_account_json(key_path)
+      # key_path = "/usr/local/airflow/dags/credentials/google_credential.json"
+      # client = storage.Client.from_service_account_json(key_path)
 
+      # bucket_name = "mercado-livre-datalake"
+      # bucket = client.get_bucket(bucket_name)
+      # blobs = bucket.list_blobs()
+
+      # gs_paths = []
+      # # Itera sobre os arquivos no bucket e constrói o gs_path
+      # for blob in blobs:
+      #     gs_path = f"gs://{bucket_name}/{blob.name}"
+      #     gs_paths.append(gs_path)
+
+      # for caminho_arquivo in gs_paths[2:]:
       bucket_name = "mercado-livre-datalake"
-      bucket = client.get_bucket(bucket_name)
-      blobs = bucket.list_blobs()
+      hoje = pendulum.now().format('YYYY-MM-DD')
 
-      gs_paths = []
-      # Itera sobre os arquivos no bucket e constrói o gs_path
-      for blob in blobs:
-          gs_path = f"gs://{bucket_name}/{blob.name}"
-          gs_paths.append(gs_path)
-
-      for caminho_arquivo in gs_paths[2:]:
-          gcs_to_bigquery_task = aql.load_file(
-                  task_id="product_data",
-                  input_file=File(path=f"{caminho_arquivo}", conn_id=GCP_CONN),
-                  output_table=Table(name="produtos", conn_id=GCP_CONN),
-                  use_native_support=True,
-                  columns_names_capitalization="original"
-              )
+      gcs_data_path = f"gs://{bucket_name}/{hoje}/*.csv"
+      gcs_to_bigquery_task = aql.load_file(
+              task_id="product_data",
+              input_file=File(path=gcs_data_path, conn_id=GCP_CONN),
+              output_table=Table(name="produtos", conn_id=GCP_CONN),
+              use_native_support=True,
+              columns_names_capitalization="original"
+          )
   
     dbt_running_models = DbtTaskGroup(
         group_id="dbt_running_models",
@@ -86,8 +92,17 @@ def elt_datapipeline():
         profile_config=profile_config,
         default_args={"retries": 2},
     )
+
+  # Tarefa para rodar o Soda após o DBT
+    run_soda_checks = BashOperator(
+        task_id="run_soda_checks",
+        bash_command="soda run --checks /usr/local/airflow/dags/soda/soda-checks.yml",
+        retries=1,
+        retry_delay=timedelta(minutes=5),
+    )
+
     data_ing = data_ingestion()
 
-    init >> data_ing >> dbt_running_models >> finish
+    init >> data_ing >> dbt_running_models >> run_soda_checks >> finish
 
 elt_datapipeline()
