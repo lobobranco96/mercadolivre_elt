@@ -31,7 +31,7 @@ def data_source():
 
     # Função para buscar dados da API
     def buscar_produtos_api(today):
-        url = f'http://localhost:5000/api/produtos/date/{today}'
+        url = f'http://localhost:5000/api/produtos'#date/{today}'
         response = requests.get(url)
         if response.status_code == 200 and len(response.json()) > 0:
             return response.json()  # Retorna a lista de produtos
@@ -40,7 +40,7 @@ def data_source():
             return []
 
     # Função que processa cada produto
-    @task(task_id="coletando_produtos")
+    #@task(task_id="coletando_produtos")
     def coleta_produto(produto):
         bucket_name = "mercado-livre-datalake"
         gcs_path = "stading"
@@ -72,7 +72,7 @@ def data_source():
         task_id="sensor_produtos_novos",
         http_conn_id="http_default", 
         endpoint=endpoint_api,
-        poke_interval=10,
+        poke_interval=600,
         timeout=600,
         mode="poke",
         retries=5,
@@ -80,3 +80,5 @@ def data_source():
 
     # Definindo o fluxo de execução
     init >> sensor >> iniciar_mercado_livre() >> finish
+
+data_source = data_source()

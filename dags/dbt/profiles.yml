@@ -1,5 +1,4 @@
 dbt_project:
-  target: dev
   outputs:
     dev:
       type: bigquery
@@ -8,3 +7,5 @@ dbt_project:
       dataset: mercadolivre
       keyfile: /usr/local/airflow/dags/credentials/google_credential.json
       threads: 4
+      location: US
+  target: dev
