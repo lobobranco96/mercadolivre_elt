@@ -30,9 +30,8 @@ def data_source():
     init = EmptyOperator(task_id="inicio")
     finish = EmptyOperator(task_id="fim_pipeline")
 
-    # Função para buscar dados da API
     def buscar_produtos_api():
-        url = f'http://localhost:5000/api/produtos/date/{HOJE}'
+        url = f'http://host.docker.internal:5000/api/produtos/date/{HOJE}'
         response = requests.get(url)
         if response.status_code == 200 and len(response.json()) > 0:
             return response.json()  # Retorna a lista de produtos
@@ -78,8 +77,8 @@ def data_source():
         mode="poke",
         retries=5,
     )
-
+    ml_extract = iniciar_mercado_livre()
     # Definindo o fluxo de execução
-    init >> sensor >> iniciar_mercado_livre() >> finish
+    init >> sensor >> ml_extract >> finish
 
 data_source = data_source()
