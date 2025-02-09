@@ -86,7 +86,7 @@ def elt_datapipeline():
         task_id="run_soda_checks",
         bash_command="soda run --checks /usr/local/airflow/dags/soda/soda-checks.yml",
         retries=1,
-        retry_delay=timedelta(minutes=5),
+        retry_delay=pendulum.duration(minutes=5_)
     )
 
     data_ing = data_ingestion()
