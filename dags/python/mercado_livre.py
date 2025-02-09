@@ -21,19 +21,20 @@ class MercadoLivre:
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
         }
 
-    def generate_url_product(self):
+    def generate_url_product(self, url):
         response = requests.get(url, headers=self.headers)
         soup = BeautifulSoup(response.text, "html.parser")
         lista_url = []
-        main = soup.find_all(class_="ui-search-layout__item")
 
+        main = soup.find_all(class_="ui-search-layout__item") 
         for pagina in main:
-            a_tag = pagina.find('a', class_='ui-search-link')
+            a_tag = pagina.find('a', class_='poly-component__title')
             if a_tag and 'href' in a_tag.attrs:
                 href_value = a_tag['href']
                 lista_url.append(href_value)
 
         return lista_url, soup
+
 
     def fetch_data(self, url):
         try:
@@ -123,7 +124,7 @@ class MercadoLivre:
             while url:
                 print(f"Coletando dados da página: {url}")
                 try:
-                    product_urls, soup = generate_url_product(url)  # Corrigido
+                    product_urls, soup = self.generate_url_product(url)
                     # Usar o ThreadPoolExecutor para coletar dados de produtos em paralelo
                     futures = [executor.submit(self.fetch_data, product_url) for product_url in product_urls]
                     for future in as_completed(futures):
@@ -131,6 +132,7 @@ class MercadoLivre:
                         if result:
                             df = pd.DataFrame([result])
                             dataframe = pd.concat([dataframe, df], ignore_index=True)
+
                     # Verificar se há uma próxima página
                     next_button = soup.find("li", class_="andes-pagination__button andes-pagination__button--next")
                     if next_button and next_button.find('a'):
@@ -139,7 +141,7 @@ class MercadoLivre:
                         break  # Se não houver "próxima página", sai do loop
                 except Exception as e:
                     logging.error(f"Erro ao coletar dados da página {url}: {e}")
-                    continue  # Caso algum erro ocorra, sai do loop
+                    continue
 
         return dataframe
 
