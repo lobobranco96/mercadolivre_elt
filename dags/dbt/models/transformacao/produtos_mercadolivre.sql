@@ -2,7 +2,7 @@
     materialized="table"
 ) }}
 
-with produtos_modificados as (
+WITH produtos_modificados AS (
     SELECT
         nome_produto,
         marca,
@@ -23,9 +23,9 @@ with produtos_modificados as (
         
         -- Modificando a coluna 'desconto | %'
         REGEXP_REPLACE(
-            REGEXP_REPLACE("desconto | %", 'Não encontrado', '0'),
+            REGEXP_REPLACE(desconto_percentual, 'Não encontrado', '0'),
             '% OFF', ''
-        ) AS desconto_porcento,
+        ) AS desconto_percentual,
         
         status,
         
@@ -42,7 +42,7 @@ with produtos_modificados as (
                     ),
                     ' s', ''
                 ),
-            'Não encontrado', '0')
+            'Não encontrado', '0'
         ) AS vendidos,
         
         product_url
@@ -55,7 +55,7 @@ SELECT
     preco_novo,
     parcela,
     preco_antigo,
-    desconto_porcento,
+    desconto_percentual,
     status,
     vendidos,
     product_url

@@ -8,7 +8,7 @@ SELECT
     preco_novo AS preco_novo,
     parcela AS parcela,
     preco_antigo AS preco_antigo,
-    desconto | % AS desconto_porcentagem,
+    desconto_percentual AS desconto_percentual,
     status AS status,
     vendidos AS vendidos,
     product_url AS url_produto

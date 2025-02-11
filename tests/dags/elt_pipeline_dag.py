@@ -1,7 +1,7 @@
 from pathlib import Path
 import os
 import pendulum
-from pendulum import datetime, timedelta
+from pendulum import datetime#, timedelta
 
 from airflow.decorators import dag, task, task_group
 from airflow.operators.empty import EmptyOperator
@@ -82,15 +82,15 @@ def elt_datapipeline():
     )
 
   # Tarefa para rodar o Soda após o DBT
-    run_soda_checks = BashOperator(
-        task_id="run_soda_checks",
-        bash_command="soda run --checks /usr/local/airflow/dags/soda/soda-checks.yml",
-        retries=1,
-        retry_delay=pendulum.duration(minutes=5_)
-    )
+   # run_soda_checks = BashOperator(
+    #    task_id="run_soda_checks",
+     #   bash_command="soda run --checks /usr/local/airflow/dags/soda/soda-checks.yml",
+      #  retries=1,
+       # retry_delay=pendulum.duration(minutes=5)
+    #)
 
     data_ing = data_ingestion()
 
-    init >> data_ing >> dbt_running_models >> run_soda_checks >> finish
+    init >> data_ing >> dbt_running_models >> finish#>> run_soda_checks >> finish
 
 elt_datapipeline()

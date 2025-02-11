@@ -31,48 +31,54 @@ def data_source():
     finish = EmptyOperator(task_id="fim_pipeline")
 
     def buscar_produtos_api():
-            url = f'http://host.docker.internal:5000/api/produtos/date/{HOJE}'
-            response = requests.get(url)
-            if response.status_code == 200 and len(response.json()) > 0:
-                return response.json()  # Retorna a lista de produtos
-            else:
-                logger.info("Nenhum produto encontrado ou erro na requisição.")
-                return []
+        url = f'http://host.docker.internal:5000/api/produtos/date/{HOJE}'
+        response = requests.get(url)
+        if response.status_code == 200 and len(response.json()) > 0:
+            return response.json()  # Retorna a lista de produtos
+        else:
+            logger.info("Nenhum produto encontrado ou erro na requisição.")
+            return []
+
+    # Função que processa cada produto
+    #@task(task_id="coletando_produtos")
+    def coleta_produto(produto):
+        bucket_name = "mercado-livre-datalake"
+        gcs_path = "raw"
+        try:
+            logger.info('Iniciando a coleta de produtos...')
+            nome_produto = produto['produto'].replace(" ", "-")
+            url_produto = f"https://lista.mercadolivre.com.br/{nome_produto}"
+            data_insercao = produto['data_insercao']  # Ex. 2025-01-25
+            gcs_full_path = f"{gcs_path}/{data_insercao}/{nome_produto}.csv"
+
+            # Coleta os dados e armazena no GCS
+            coletar_dados_produtos(url_produto, bucket_name, gcs_full_path)
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Erro ao coletar dados: {e}")
 
     # Função para iniciar a coleta de dados dos produtos
     @task(task_id="iniciar_mercado_livre")
     def iniciar_mercado_livre():
-        bucket_name = "mercado-livre-datalake"
-        gcs_path = "stading"
-        #url = f'http://host.docker.internal:5000/api/produtos/date/{HOJE}'
-        #response = requests.get(url)
         produtos = buscar_produtos_api()
-        for produto in produtos:
-            try:
-                #if response.status_code == 200 and len(response.json()) > 0:
-                    #produto =  response.json()
-                    logger.info('Iniciando a coleta de produtos...')
-                    nome_produto = produto['produto'].replace(" ", "-")
-                    url_produto = f"https://lista.mercadolivre.com.br/{nome_produto}"
-                    data_insercao = produto['data_insercao']  # Ex. 2025-01-25
-                    gcs_full_path = f"{gcs_path}/{data_insercao}/{nome_produto}.csv"
-                    coletar_dados_produtos(url_produto, bucket_name, gcs_full_path)
-            except requests.exceptions.RequestException as e:
-                logger.error(f"Erro ao coletar dados: {e}")
+        if produtos:  # Verifica se há produtos antes de coletar
+            for produto in produtos:
+                coleta_produto(produto)
+        else:
+            logger.info("Nenhum produto encontrado para coleta.")
 
-    #endpoint_api = f"api/produtos/date/{HOJE}"
+    endpoint_api = f"/api/produtos/date/{HOJE}"
     # Configuração do HttpSensor para verificar se há novos produtos
-    #sensor = HttpSensor(
-     #   task_id="sensor_produtos_novos",
-      #  http_conn_id="http_default", 
-       # endpoint=endpoint_api,
-        #poke_interval=600,
-        #timeout=600,
-        #mode="poke",
-        #retries=5,
-    #)
-    scrap_init = iniciar_mercado_livre()
+    sensor = HttpSensor(
+        task_id="sensor_produtos_novos",
+        http_conn_id="http_default", 
+        endpoint=endpoint_api,
+        poke_interval=600,
+        timeout=600,
+        mode="poke",
+        retries=5,
+    )
+    ml_extract = iniciar_mercado_livre()
     # Definindo o fluxo de execução
-    init >> scrap_init >> finish
+    init >> sensor >> ml_extract >> finish
 
 data_source = data_source()

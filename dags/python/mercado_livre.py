@@ -132,11 +132,14 @@ class MercadoLivre:
                         if result:
                             df = pd.DataFrame([result])
                             dataframe = pd.concat([dataframe, df], ignore_index=True)
+                        break
+                            
 
                     # Verificar se há uma próxima página
                     next_button = soup.find("li", class_="andes-pagination__button andes-pagination__button--next")
                     if next_button and next_button.find('a'):
                         url = next_button.find('a')['href']
+                        break
                     else:
                         break  # Se não houver "próxima página", sai do loop
                 except Exception as e:
@@ -152,7 +155,7 @@ def upload_to_gcs(local_tmp_path, bucket_name, gcs_full_path):
     bucket = client.get_bucket(bucket_name)
     blob = bucket.blob(gcs_full_path)
 
-    logger.info(f'Arquivo enviado para {gcs_file_path}')
+    logger.info(f'Arquivo enviado para {gcs_full_path}')
     return blob.upload_from_filename(local_tmp_path)
 
 
