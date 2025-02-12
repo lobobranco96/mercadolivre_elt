@@ -97,7 +97,7 @@ def pipeline():
         except requests.exceptions.RequestException as e:
             logger.error(f"Erro ao coletar dados: {e}")
 
-    @task(task_id="iniciar_mercado_livre")
+    @task(task_id="iniciar_extracao_mercado_livre")
     def iniciar_mercado_livre():
         produtos = buscar_produtos_api()
         if produtos:
@@ -109,28 +109,41 @@ def pipeline():
 
     ml_extract = iniciar_mercado_livre()
 
-    def processar_arquivos(**kwargs):
+    @task
+    def carregar_arquivo(arquivo: str):
+        """Carrega um arquivo específico para o BigQuery."""
+        gcs_data_path = f"gs://{BUCKET_NAME}/{arquivo}"
+
+        logger.info(f"Arquivo {arquivo} processado!")
+
+        load_file =  aql.load_file(
+            task_id=f"load_{arquivo.replace('/', '_')}",
+            input_file=File(path=gcs_data_path, conn_id=GCP_CONN),
+            output_table=Table(
+                name="produtos",
+                conn_id=GCP_CONN,
+                metadata={"schema": "mercadolivre", "database": "projeto-lobobranco"}
+            ),
+            use_native_support=False,
+            columns_names_capitalization="original"
+        )
+        load_file
+
+    @task
+    def processar_arquivos(**kwargs) -> list:
+        """Recupera os arquivos listados e retorna a lista."""
         ti = kwargs['ti']
         arquivos = ti.xcom_pull(task_ids="listar_arquivos")
+
         if not arquivos:
             logger.info("Nenhum arquivo encontrado para processamento.")
-            return
+            return []
 
-        for arquivo in arquivos:
-            gcs_data_path = f"gs://{BUCKET_NAME}/{arquivo}"
-            aql.load_file(
-                task_id=f"load_{arquivo.replace('/', '_')}",
-                input_file=File(path=gcs_data_path, conn_id=GCP_CONN),
-                output_table=Table(
-                    name="produtos",
-                    conn_id=GCP_CONN,
-                    metadata={"schema": "mercadolivre", "database": "projeto-lobobranco"}
-                ),
-                use_native_support=False,
-                columns_names_capitalization="original",
-                if_exists="append"
-            )
-            logger.info(f"Processando arquivo: {arquivo}")
+        return arquivos  # ✅ Retorna a lista de arquivos normalmente
+
+    arquivos = processar_arquivos()
+
+    carregar_tasks = carregar_arquivo.expand(arquivo=arquivos)
 
     listar_arquivos = GCSListObjectsOperator(
         task_id="listar_arquivos",
@@ -140,10 +153,10 @@ def pipeline():
         do_xcom_push=True
     )
 
-    gcs_to_bigquery = PythonOperator(
-        task_id="processar_arquivos",
-        python_callable=processar_arquivos
-    )
+    #gcs_to_bigquery = PythonOperator(
+     #   task_id="gcs_to_bigquery",
+      #  python_callable=processar_arquivos
+    #)
 
     dbt_running_models = DbtTaskGroup(
         group_id="dbt_running_models",
@@ -151,6 +164,6 @@ def pipeline():
         profile_config=profile_config
     )
 
-    init >> sensor >> ml_extract >> listar_arquivos >> gcs_to_bigquery >> dbt_running_models >> finish
+    init >> sensor >> ml_extract >> listar_arquivos >> arquivos >> carregar_tasks >> dbt_running_models >> finish
 
 data_source = pipeline()
