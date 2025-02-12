@@ -72,7 +72,7 @@ def pipeline():
         task_id="sensor_produtos_novos",
         http_conn_id="http_default", 
         endpoint=endpoint_api,
-        poke_interval=600,
+        poke_interval=60,
         timeout=600,
         mode="poke",
         retries=5,
@@ -122,8 +122,9 @@ def pipeline():
         name="produtos",
         conn_id=GCP_CONN,
         metadata={"schema": "mercadolivre", "database": "projeto-lobobranco"}),
-            use_native_support=True,
-            columns_names_capitalization="original"
+            use_native_support=False,
+            columns_names_capitalization="original",
+            if_exists="append"
         )
   
     dbt_running_models = DbtTaskGroup(

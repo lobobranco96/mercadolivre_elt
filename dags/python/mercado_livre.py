@@ -107,7 +107,7 @@ class MercadoLivre:
                 "preco_novo": preco,
                 "parcela": parcela,
                 "preco_antigo": full_preco_antigo,
-                "desconto | %": desconto,
+                "desconto_percentual": desconto,
                 "status": novo_ou_usado,
                 "vendidos": vendidos,
                 "product_url": url
@@ -132,14 +132,12 @@ class MercadoLivre:
                         if result:
                             df = pd.DataFrame([result])
                             dataframe = pd.concat([dataframe, df], ignore_index=True)
-                        break
                             
 
                     # Verificar se há uma próxima página
                     next_button = soup.find("li", class_="andes-pagination__button andes-pagination__button--next")
                     if next_button and next_button.find('a'):
                         url = next_button.find('a')['href']
-                        break
                     else:
                         break  # Se não houver "próxima página", sai do loop
                 except Exception as e:
@@ -166,7 +164,7 @@ def coletar_dados_produtos(url_produto, bucket_name, gcs_full_path):
 
     # Coletar dados de todas as páginas
     dataframe = ml.get_all_pages_data()
-
+    print(dataframe)
     nome_produto = url_produto.split('/')[3]
 
     # Salvar os dados em um arquivo CSV

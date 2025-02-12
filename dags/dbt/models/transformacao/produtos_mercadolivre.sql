@@ -6,6 +6,7 @@ WITH produtos_modificados AS (
     SELECT
         nome_produto,
         marca,
+        
         -- Modificando a coluna 'preco_novo'
         REGEXP_REPLACE(
             REGEXP_REPLACE(preco_novo, 'Não encontrado', '0'),
@@ -17,11 +18,11 @@ WITH produtos_modificados AS (
         
         -- Modificando a coluna 'preco_antigo'
         REGEXP_REPLACE(
-            REGEXP_REPLACE(preco_antigo, 'Não encontrado', '00'),  -- Substitui 'Não encontrado' por '0'
-            '00,Não encontrado', '0'  -- Substitui '00,Não encontrado' por '0'
+            REGEXP_REPLACE(preco_antigo, 'Não encontrado', '00'),  
+            '00,Não encontrado', '0'  
         ) AS preco_antigo,
         
-        -- Modificando a coluna 'desconto | %'
+        -- Modificando a coluna 'desconto_percentual'
         REGEXP_REPLACE(
             REGEXP_REPLACE(desconto_percentual, 'Não encontrado', '0'),
             '% OFF', ''
@@ -34,21 +35,17 @@ WITH produtos_modificados AS (
             REGEXP_REPLACE(
                 REGEXP_REPLACE(
                     REGEXP_REPLACE(
-                        REGEXP_REPLACE(
-                            REGEXP_REPLACE(vendidos, 'vendido', ''),
-                            'mil', '000'
-                        ),
-                        '\\+', ''
+                        REGEXP_REPLACE(vendidos, 'vendido', ''),
+                        'mil', '000'
                     ),
-                    ' s', ''
+                    '\\+', ''
                 ),
-            'Não encontrado', '0'
+                ' s', ''
+            ), '0'
         ) AS vendidos,
-        
-        product_url
-    FROM {{ ref('source_produtos') }}
+        url_produto
+        FROM {{ ref('source_produtos') }}
 )
-
 SELECT
     nome_produto,
     marca,
@@ -58,5 +55,5 @@ SELECT
     desconto_percentual,
     status,
     vendidos,
-    product_url
-FROM produtos_modificados;
+    url_produto
+FROM produtos_modificados
