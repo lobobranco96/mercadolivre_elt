@@ -15,13 +15,33 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 class MercadoLivre:
+    """
+    Classe para coletar dados de produtos do Mercado Livre utilizando scraping.
+    """
+
     def __init__(self, url, headers=None):
+        """
+        Inicializa a classe MercadoLivre com a URL da página de produtos e os headers para a requisição HTTP.
+
+        Args:
+            url (str): URL da página do Mercado Livre para buscar os produtos.
+            headers (dict, optional): Cabeçalhos HTTP personalizados para a requisição. Se None, será usado um cabeçalho padrão.
+        """
         self.url = url
         self.headers = headers or {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
         }
 
     def generate_url_product(self, url):
+        """
+        Gera uma lista de URLs de produtos a partir da página do Mercado Livre.
+
+        Args:
+            url (str): URL da página de listagem de produtos.
+
+        Returns:
+            tuple: Lista de URLs de produtos e o objeto BeautifulSoup da página.
+        """
         response = requests.get(url, headers=self.headers)
         soup = BeautifulSoup(response.text, "html.parser")
         lista_url = []
@@ -37,6 +57,15 @@ class MercadoLivre:
 
 
     def fetch_data(self, url):
+        """
+        Coleta dados detalhados de um produto a partir da URL do Mercado Livre.
+
+        Args:
+            url (str): URL de um produto específico.
+
+        Returns:
+            dict: Dicionário com os dados do produto, ou None se ocorrer erro durante a requisição.
+        """
         try:
             response = requests.get(url, headers=self.headers, timeout=10)
             soup = BeautifulSoup(response.text, "html.parser")
@@ -117,6 +146,12 @@ class MercadoLivre:
             return None
 
     def get_all_pages_data(self):
+        """
+        Coleta dados de todas as páginas de produtos da URL fornecida.
+
+        Returns:
+            pd.DataFrame: DataFrame contendo os dados de todos os produtos coletados.
+        """
         dataframe = pd.DataFrame()
         url = self.url
 
@@ -147,7 +182,17 @@ class MercadoLivre:
         return dataframe
 
 def upload_to_gcs(local_tmp_path, bucket_name, gcs_full_path):
+    """
+    Faz o upload de um arquivo local para um bucket do Google Cloud Storage (GCS).
 
+    Args:
+        local_tmp_path (str): Caminho do arquivo local a ser enviado.
+        bucket_name (str): Nome do bucket GCS onde o arquivo será armazenado.
+        gcs_full_path (str): Caminho completo no GCS onde o arquivo será armazenado.
+
+    Returns:
+        blob: O blob (arquivo) no GCS.
+    """
     key_path = "/usr/local/airflow/dags/credentials/google_credential.json"
     client = storage.Client.from_service_account_json(key_path)
     bucket = client.get_bucket(bucket_name)
@@ -159,6 +204,14 @@ def upload_to_gcs(local_tmp_path, bucket_name, gcs_full_path):
 
 
 def coletar_dados_produtos(url_produto, bucket_name, gcs_full_path):
+    """
+    Coleta dados de um produto no Mercado Livre e faz o upload dos dados para o Google Cloud Storage.
+
+    Args:
+        url_produto (str): URL do produto no Mercado Livre.
+        bucket_name (str): Nome do bucket do GCS onde os dados serão armazenados.
+        gcs_full_path (str): Caminho completo no GCS onde os dados serão armazenados.
+    """
     # Instanciar a classe MercadoLivreWebScraper com o produto URL
     ml = MercadoLivre(url=url_produto)
 
@@ -183,5 +236,5 @@ def coletar_dados_produtos(url_produto, bucket_name, gcs_full_path):
         logger.info(f"Arquivo local {local_tmp_path} excluído após o upload.")
 
 if __name__ == "__main__":
-    # Cabeçalho para evitar bloqueios
+    # Os argumentos serão passados dentro da dag que executará a função
     coletar_dados_produtos(url_produto, bucket_name, gcs_full_path)
